@@ -1,65 +1,52 @@
-import Image from "next/image";
+import { TopBar } from "@/components/top-bar";
+import { Header } from "@/components/header";
+import { SidebarNav } from "@/components/sidebar-nav";
+import { HeroBanner } from "@/components/hero-banner";
+import { Footer } from "@/components/footer";
+import { StoreGrid, MostPopularSection, ChosenEditSection, TrendingBrandsSection, NewIn2026Section, StylingVideosSection, EditorPicksSection, TrendingProductsSection } from "@/components/home";
+import { siteSections } from "@/data/site";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="min-h-screen bg-[var(--background)]">
+      <div className="bg-white lg:fixed lg:inset-x-0 lg:top-0 lg:z-[90]">
+        <TopBar />
+        <Header />
+
+        <nav className="border-b border-[var(--border)] bg-white px-4 py-2 lg:hidden">
+          <ul className="grid grid-cols-4 items-center text-center">
+            {(["West", "Women", "Men", "Kids"] as const).map((tab) => (
+              <li key={tab}>
+                <button className="w-full py-2 text-[1.05rem] font-semibold text-[#525e6b]">{tab}</button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
+
+      <main className="w-full pt-0 lg:pt-[112px]">
+        <aside className="hidden border-r border-[var(--border)] bg-[var(--background)] lg:fixed lg:top-[112px] lg:bottom-0 lg:left-0 lg:z-40 lg:block lg:w-[280px] lg:overflow-y-auto">
+          <SidebarNav items={siteSections.sidebar} />
+        </aside>
+
+        <section className="px-4 py-3 sm:px-5 sm:py-4 lg:ml-[280px] lg:px-8 lg:py-5 xl:px-10">
+          <div className="mx-auto w-full max-w-[980px] xl:max-w-[1100px]">
+            <HeroBanner />
+            <StoreGrid />
+            <MostPopularSection />
+            <ChosenEditSection />
+            <TrendingBrandsSection />
+            <NewIn2026Section />
+            <StylingVideosSection />
+            <EditorPicksSection />
+            <TrendingProductsSection />
+          </div>
+        </section>
       </main>
+
+      <div className="lg:pl-[280px]">
+        <Footer />
+      </div>
     </div>
   );
 }
