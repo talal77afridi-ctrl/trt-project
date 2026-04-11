@@ -40,7 +40,6 @@ export const menAccessoriesMenuSectionRows: ClothingMenuSectionRow[] = [
       { title: "Flat Cap", imageSrc: "/assets/sidebar/men/accessories/cap.webp", imageAlt: "Flat cap" },
       { title: "Trucker Cap", imageSrc: "/assets/sidebar/men/accessories/cap.webp", imageAlt: "Trucker cap" },
     ],
-    placement: "top",
   },
   {
     title: "Eyewear",
@@ -53,6 +52,5 @@ export const menAccessoriesMenuSectionRows: ClothingMenuSectionRow[] = [
       { title: "Wallet", imageSrc: "/assets/sidebar/men/accessories/shawls.webp", imageAlt: "Wallet" },
       { title: "Muffler", imageSrc: "/assets/sidebar/men/accessories/shawls.webp", imageAlt: "Muffler" },
     ],
-    placement: "top",
   },
 ];
