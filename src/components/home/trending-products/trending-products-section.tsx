@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { homeSections } from "@/data/home/home-sections";
 
 const filters = ["Category", "Sort By", "Fabric", "Price", "Size", "Color", "Brands"];
@@ -66,11 +67,14 @@ export function TrendingProductsSection() {
       </div>
 
       <ul className="mt-5 grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-7 lg:grid-cols-4 lg:gap-x-5">
-        {homeSections.trendingProducts.map((product) => (
+        {homeSections.trendingProducts.map((product, index) => {
+          const productId = `t${String(index + 1).padStart(3, '0')}`;
+          return (
           <li key={`${product.name}-${product.subtitle}`}>
             <article>
+              <Link href={`/trending-products/${productId}`}>
               <figure className="relative h-[250px] overflow-hidden rounded-lg bg-[#ececec] sm:h-[300px]">
-                <img src={product.image} alt={product.name} className="h-full w-full object-cover" loading="lazy" />
+                <img src={product.image} alt={product.name} className="h-full w-full object-cover transition-transform duration-300 ease-in-out hover:scale-[1.04]" loading="lazy" />
 
                 <span className="absolute left-2 top-2 rounded-md bg-[#ef2f2f] px-2 py-0.5 text-[0.94rem] font-semibold text-white">
                   {product.discount}
@@ -92,6 +96,7 @@ export function TrendingProductsSection() {
                   </span>
                 ) : null}
               </figure>
+              </Link>
 
               <div className="mt-3 flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -101,13 +106,13 @@ export function TrendingProductsSection() {
                   <p className="truncate text-[1rem] text-[#6b7280] sm:text-[0.95rem]">{product.subtitle}</p>
                 </div>
 
-                <button type="button" aria-label="Add to bag" className="mt-1 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/20 bg-white text-[#4b5563]">
+                <Link href={`/trending-products/${productId}`} aria-label="Add to bag" className="mt-1 inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/20 bg-white text-[#4b5563]">
                   <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
                     <path d="M7 9h10l-1 9H8L7 9Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
                     <path d="M9 9a3 3 0 1 1 6 0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                     <path d="M12 11.5v4M10 13.5h4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
-                </button>
+                </Link>
               </div>
 
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -116,7 +121,8 @@ export function TrendingProductsSection() {
               </div>
             </article>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </section>
   );

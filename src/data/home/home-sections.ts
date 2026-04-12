@@ -9,6 +9,7 @@ export type MostPopularBrand = {
   items: string;
   discount: string;
   image: string;
+  route?: string;
 };
 
 export type StylingVideoItem = {
@@ -23,6 +24,7 @@ export type EditorPickItem = {
   discount: string;
   image: string;
   adTag?: boolean;
+  slug: string;
 };
 
 export type TrendingProductItem = {
@@ -64,47 +66,47 @@ export const homeSections = {
   ] as HomeCategoryItem[],
 
   mostPopular: [
-    { name: "Haseens Official", items: "456 items", discount: "Upto 55% off", image: "/assets/popular/dress.webp" },
-    { name: "Four Season Boutique", items: "491 items", discount: "Upto 78% off", image: "/assets/popular/dress1.webp" },
-    { name: "Sahibas By Mirza", items: "415 items", discount: "Upto 75% off", image: "/assets/popular/dress2.webp" },
-    { name: "Khuda Baksh Creations", items: "116 items", discount: "Upto 60% off", image: "/assets/popular/dress3.webp" },
-    { name: "Diara Couture", items: "252 items", discount: "Upto 60% off", image: "/assets/banner/image2.png" },
-    { name: "Rang-e-Haya", items: "204 items", discount: "Upto 75% off", image: "/assets/banner/image3.png" },
-    { name: "Agha Jaan", items: "186 items", discount: "Upto 79% off", image: "/assets/banner/image4.png" },
-    { name: "Aik Pret", items: "109 items", discount: "Upto 63% off", image: "/assets/banner/image1.png" },
+    { name: "Haseens Official", items: "456 items", discount: "Upto 55% off", image: "/assets/popular/dress.webp", route: "/products/haseena" },
+    { name: "Four Season Boutique", items: "491 items", discount: "Upto 78% off", image: "/assets/popular/dress1.webp", route: "/brands/four-season" },
+    { name: "Sahibas By Mirza", items: "415 items", discount: "Upto 75% off", image: "/assets/popular/dress2.webp", route: "/brands/sahibas" },
+    { name: "Khuda Baksh Creations", items: "116 items", discount: "Upto 60% off", image: "/assets/popular/dress3.webp", route: "/brands/khuda-baksh" },
+    { name: "Diara Couture", items: "252 items", discount: "Upto 60% off", image: "/assets/banner/image2.png", route: "/brands/diara-couture" },
+    { name: "Rang-e-Haya", items: "204 items", discount: "Upto 75% off", image: "/assets/banner/image3.png", route: "/brands/rang-e-haya" },
+    { name: "Agha Jaan", items: "186 items", discount: "Upto 79% off", image: "/assets/banner/image4.png", route: "/brands/agha-jaan" },
+    { name: "Aik Pret", items: "109 items", discount: "Upto 63% off", image: "/assets/banner/image1.png", route: "/brands/aik-pret" },
   ] as MostPopularBrand[],
 
   chosenEdit: [
-    { name: "Momin Online", items: "251 items", discount: "Upto 74% off", image: "/assets/choose/dress.webp" },
-    { name: "Laal Clothing", items: "244 items", discount: "Upto 70% off", image: "/assets/choose/dress1.webp" },
-    { name: "Abaan Zohan", items: "87 items", discount: "Upto 70% off", image: "/assets/choose/dress2.webp" },
-    { name: "Bin Tayyab", items: "238 items", discount: "Upto 60% off", image: "/assets/choose/dress3.webp" },
-    { name: "Noorma Kaamal", items: "202 items", discount: "Upto 63% off", image: "/assets/choose/dress.webp" },
-    { name: "Truba", items: "59 items", discount: "Upto 40% off", image: "/assets/choose/dress1.webp" },
-    { name: "Tehzeeb Libas", items: "156 items", discount: "Upto 80% off", image: "/assets/choose/dress2.webp" },
-    { name: "Polawn", items: "247 items", discount: "Upto 64% off", image: "/assets/choose/dress3.webp" },
+    { name: "Momin Online", items: "251 items", discount: "Upto 74% off", image: "/assets/choose/dress.webp", route: "/brands/momin-online" },
+    { name: "Laal Clothing", items: "244 items", discount: "Upto 70% off", image: "/assets/choose/dress1.webp", route: "/brands/laal-clothing" },
+    { name: "Abaan Zohan", items: "87 items", discount: "Upto 70% off", image: "/assets/choose/dress2.webp", route: "/brands/abaan-zohan" },
+    { name: "Bin Tayyab", items: "238 items", discount: "Upto 60% off", image: "/assets/choose/dress3.webp", route: "/brands/bin-tayyab" },
+    { name: "Noorma Kaamal", items: "202 items", discount: "Upto 63% off", image: "/assets/choose/dress.webp", route: "/brands/noorma-kaamal" },
+    { name: "Truba", items: "59 items", discount: "Upto 40% off", image: "/assets/choose/dress1.webp", route: "/brands/truba" },
+    { name: "Tehzeeb Libas", items: "156 items", discount: "Upto 80% off", image: "/assets/choose/dress2.webp", route: "/brands/tehzeeb-libas" },
+    { name: "Polawn", items: "247 items", discount: "Upto 64% off", image: "/assets/choose/dress3.webp", route: "/brands/polawn" },
   ] as MostPopularBrand[],
 
   trendingBrands: [
-    { name: "Zuri", items: "146 items", discount: "Upto 60% off", image: "/assets/Trending/dress.webp" },
-    { name: "Laleen", items: "213 items", discount: "Upto 60% off", image: "/assets/Trending/dress1.webp" },
-    { name: "Fresh Birds", items: "221 items", discount: "Upto 60% off", image: "/assets/Trending/dress2.webp" },
-    { name: "Panache Apparel", items: "286 items", discount: "Upto 70% off", image: "/assets/Trending/dress3.webp" },
-    { name: "Pehnawa By Bin Akram's", items: "136 items", discount: "Upto 65% off", image: "/assets/Trending/dress.webp" },
-    { name: "Meerak Pret", items: "136 items", discount: "Upto 60% off", image: "/assets/Trending/dress1.webp" },
-    { name: "Ayesha Closet", items: "257 items", discount: "Upto 49% off", image: "/assets/Trending/dress2.webp" },
-    { name: "Chaudhary Arts", items: "175 items", discount: "Upto 68% off", image: "/assets/Trending/dress3.webp" },
+    { name: "Zuri", items: "146 items", discount: "Upto 60% off", image: "/assets/Trending/dress.webp", route: "/brands/zuri" },
+    { name: "Laleen", items: "213 items", discount: "Upto 60% off", image: "/assets/Trending/dress1.webp", route: "/brands/laleen" },
+    { name: "Fresh Birds", items: "221 items", discount: "Upto 60% off", image: "/assets/Trending/dress2.webp", route: "/brands/fresh-birds" },
+    { name: "Panache Apparel", items: "286 items", discount: "Upto 70% off", image: "/assets/Trending/dress3.webp", route: "/brands/panache-apparel" },
+    { name: "Pehnawa By Bin Akram's", items: "136 items", discount: "Upto 65% off", image: "/assets/Trending/dress.webp", route: "/brands/pehnawa" },
+    { name: "Meerak Pret", items: "136 items", discount: "Upto 60% off", image: "/assets/Trending/dress1.webp", route: "/brands/meerak-pret" },
+    { name: "Ayesha Closet", items: "257 items", discount: "Upto 49% off", image: "/assets/Trending/dress2.webp", route: "/brands/ayesha-closet" },
+    { name: "Chaudhary Arts", items: "175 items", discount: "Upto 68% off", image: "/assets/Trending/dress3.webp", route: "/brands/chaudhary-arts" },
   ] as MostPopularBrand[],
 
   newIn2026: [
-    { name: "Maria.B | Safari Scape -Vol29", items: "Maria B", discount: "Upto 13% off", image: "/assets/choose/dress.webp" },
-    { name: "Qalamkar | Casual Pret '26", items: "Qalamkar", discount: "Upto 5% off", image: "/assets/choose/dress1.webp" },
-    { name: "Manara | Eid Pret Collection'26", items: "Manara", discount: "Upto 10% off", image: "/assets/choose/dress2.webp" },
-    { name: "Noor Eid Luxe Printskhaas '26", items: "Noor By Saadia Asad", discount: "Upto 10% off", image: "/assets/choose/dress3.webp" },
-    { name: "Noorma Kaamal | New Pret", items: "Noorma Kaamal", discount: "Upto 12% off", image: "/assets/popular/dress.webp" },
-    { name: "Laleen | Soft Formal", items: "Laleen", discount: "Upto 9% off", image: "/assets/Trending/dress1.webp" },
-    { name: "Panache Apparel | New Arrivals", items: "Panache Apparel", discount: "Upto 14% off", image: "/assets/Trending/dress3.webp" },
-    { name: "Aik Pret | Signature Edit", items: "Aik Pret", discount: "Upto 11% off", image: "/assets/popular/dress1.webp" },
+    { name: "Maria.B | Safari Scape -Vol29", items: "Maria B", discount: "Upto 13% off", image: "/assets/choose/dress.webp", route: "/brands/maria-b" },
+    { name: "Qalamkar | Casual Pret '26", items: "Qalamkar", discount: "Upto 5% off", image: "/assets/choose/dress1.webp", route: "/brands/qalamkar" },
+    { name: "Manara | Eid Pret Collection'26", items: "Manara", discount: "Upto 10% off", image: "/assets/choose/dress2.webp", route: "/brands/manara" },
+    { name: "Noor Eid Luxe Printskhaas '26", items: "Noor By Saadia Asad", discount: "Upto 10% off", image: "/assets/choose/dress3.webp", route: "/brands/noor" },
+    { name: "Noorma Kaamal | New Pret", items: "Noorma Kaamal", discount: "Upto 12% off", image: "/assets/popular/dress.webp", route: "/brands/noorma-kaamal" },
+    { name: "Laleen | Soft Formal", items: "Laleen", discount: "Upto 9% off", image: "/assets/Trending/dress1.webp", route: "/brands/laleen" },
+    { name: "Panache Apparel | New Arrivals", items: "Panache Apparel", discount: "Upto 14% off", image: "/assets/Trending/dress3.webp", route: "/brands/panache-apparel" },
+    { name: "Aik Pret | Signature Edit", items: "Aik Pret", discount: "Upto 11% off", image: "/assets/popular/dress1.webp", route: "/brands/aik-pret" },
   ] as MostPopularBrand[],
 
   stylingVideos: [
@@ -116,14 +118,14 @@ export const homeSections = {
   ] as StylingVideoItem[],
 
   editorPicks: [
-    { name: "Meeral Luxe", items: "113 items", discount: "Upto 72% off", image: "/assets/picks/dress.webp", adTag: true },
-    { name: "Ahmad Raza", items: "354 items", discount: "Upto 40% off", image: "/assets/picks/dress1.webp", adTag: true },
-    { name: "Farah Talib Aziz", items: "71 items", discount: "Upto 50% off", image: "/assets/picks/dress2.webp" },
-    { name: "Alliyas_By_Farooqkhalid", items: "36 items", discount: "Upto 50% off", image: "/assets/picks/dress3.webp" },
-    { name: "Muntaha By Shanzay", items: "50 items", discount: "Upto 20% off", image: "/assets/picks/dress4.webp" },
-    { name: "Wardrobe Essentials", items: "27 items", discount: "Upto 20% off", image: "/assets/picks/dress5.webp" },
-    { name: "Daak & Co.", items: "21 items", discount: "Upto 25% off", image: "/assets/picks/dress6.webp" },
-    { name: "Yashfa Studio", items: "12 items", discount: "Upto 10% off", image: "/assets/picks/dress7.webp" },
+    { name: "Meeral Luxe", items: "113 items", discount: "Upto 72% off", image: "/assets/picks/dress.webp", adTag: true, slug: "meeral-luxe" },
+    { name: "Ahmad Raza", items: "354 items", discount: "Upto 40% off", image: "/assets/picks/dress1.webp", adTag: true, slug: "ahmad-raza" },
+    { name: "Farah Talib Aziz", items: "71 items", discount: "Upto 50% off", image: "/assets/picks/dress2.webp", slug: "farah-talib-aziz" },
+    { name: "Alliyas_By_Farooqkhalid", items: "36 items", discount: "Upto 50% off", image: "/assets/picks/dress3.webp", slug: "alliyas-by-farooqkhalid" },
+    { name: "Muntaha By Shanzay", items: "50 items", discount: "Upto 20% off", image: "/assets/picks/dress4.webp", slug: "muntaha-by-shanzay" },
+    { name: "Wardrobe Essentials", items: "27 items", discount: "Upto 20% off", image: "/assets/picks/dress5.webp", slug: "wardrobe-essentials" },
+    { name: "Daak & Co.", items: "21 items", discount: "Upto 25% off", image: "/assets/picks/dress6.webp", slug: "daak-co" },
+    { name: "Yashfa Studio", items: "12 items", discount: "Upto 10% off", image: "/assets/picks/dress7.webp", slug: "yashfa-studio" },
   ] as EditorPickItem[],
 
   trendingProducts: [

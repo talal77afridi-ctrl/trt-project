@@ -85,6 +85,7 @@ export function Header() {
   const [isMobileCountrySheetOpen, setIsMobileCountrySheetOpen] = useState(false);
   const [mobileSheetView, setMobileSheetView] = useState<"menu" | "country" | "currency">("menu");
   const [countrySearch, setCountrySearch] = useState("");
+  const [cartCount, setCartCount] = useState(0);
 
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const currencyRef = useRef<HTMLDivElement | null>(null);
@@ -152,6 +153,41 @@ export function Header() {
     }
   }, [isMobileCountrySheetOpen]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const setInitialCartCount = () => {
+      setCartCount(Number(window.localStorage.getItem("cart-count") || "0"));
+    };
+
+    const onCartCountUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ count?: number }>;
+      if (typeof customEvent.detail?.count === "number") {
+        setCartCount(customEvent.detail.count);
+        return;
+      }
+
+      setInitialCartCount();
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === "cart-count") {
+        setInitialCartCount();
+      }
+    };
+
+    setInitialCartCount();
+    window.addEventListener("cart-count-updated", onCartCountUpdated as EventListener);
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("cart-count-updated", onCartCountUpdated as EventListener);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
+
   return (
     <header className="border-b border-[var(--border)] bg-white">
       <div className="w-full px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
@@ -177,11 +213,16 @@ export function Header() {
                 {selectedCurrency}
               </button>
 
-              <button aria-label="Cart" className="rounded-full p-1.5 transition hover:bg-black/5">
+              <button aria-label="Cart" className="relative rounded-full p-1.5 transition hover:bg-black/5">
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6 text-[var(--foreground)]">
                   <path d="M6 7.5h12l-1 10H7L6 7.5Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
                   <path d="M9 7.5a3 3 0 0 1 6 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                 </svg>
+                {cartCount > 0 ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#e41e2d] px-1 text-[10px] font-semibold text-white">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                ) : null}
               </button>
             </div>
 
@@ -577,11 +618,16 @@ export function Header() {
                   ) : null}
                 </div>
 
-                <button aria-label="Cart" className="rounded-full p-2 transition hover:bg-black/5">
+                <button aria-label="Cart" className="relative rounded-full p-2 transition hover:bg-black/5">
                   <svg viewBox="0 0 24 24" aria-hidden="true" className="h-7 w-7 text-[var(--foreground)]">
                     <path d="M6 7.5h12l-1 10H7L6 7.5Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
                     <path d="M9 7.5a3 3 0 0 1 6 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                   </svg>
+                  {cartCount > 0 ? (
+                    <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#e41e2d] px-1 text-[10px] font-semibold text-white">
+                      {cartCount > 99 ? "99+" : cartCount}
+                    </span>
+                  ) : null}
                 </button>
               </div>
 

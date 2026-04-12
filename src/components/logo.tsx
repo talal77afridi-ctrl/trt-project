@@ -1,8 +1,9 @@
 import Image from "next/image";
+import Link from "next/link";
 
 export function TRTLogo() {
   return (
-    <div className="flex items-center gap-3">
+    <Link href="/" className="flex items-center gap-3">
       <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-[var(--border)] bg-[var(--background)] shadow-[0_8px_24px_rgba(17,17,17,0.08)]">
         <Image
           src="/assets/logo/logo1.webp"
@@ -19,6 +20,6 @@ export function TRTLogo() {
           Traditional Wear
         </p>
       </div>
-    </div>
+    </Link>
   );
 }
