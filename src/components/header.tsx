@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TRTLogo } from "@/components/logo";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { CartDrawer } from "@/components/cart-drawer";
 import { haseneaProducts } from "@/data/products/haseena";
 import { searchCatalogProducts } from "@/data/products/search";
 
@@ -117,6 +118,7 @@ export function Header() {
   const [mobileSheetView, setMobileSheetView] = useState<"menu" | "country" | "currency">("menu");
   const [countrySearch, setCountrySearch] = useState("");
   const [cartCount, setCartCount] = useState(0);
+  const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
 
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const currencyRef = useRef<HTMLDivElement | null>(null);
@@ -429,7 +431,7 @@ export function Header() {
 
               <button
                 type="button"
-                onClick={() => router.push('/bag')}
+                onClick={() => setIsCartDrawerOpen(true)}
                 aria-label="Cart"
                 className="relative rounded-full p-1.5 transition hover:bg-black/5"
               >
@@ -937,7 +939,7 @@ export function Header() {
 
                 <button
                   type="button"
-                  onClick={() => router.push('/bag')}
+                  onClick={() => setIsCartDrawerOpen(true)}
                   aria-label="Cart"
                   className="relative rounded-full p-2 transition hover:bg-black/5"
                 >
@@ -1031,6 +1033,8 @@ export function Header() {
       </div>
 
       <MobileBottomNav />
+
+      <CartDrawer isOpen={isCartDrawerOpen} onClose={() => setIsCartDrawerOpen(false)} />
     </header>
   );
 }
