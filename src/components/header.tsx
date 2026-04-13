@@ -1,9 +1,34 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TRTLogo } from "@/components/logo";
+import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { haseneaProducts } from "@/data/products/haseena";
+import { searchCatalogProducts } from "@/data/products/search";
 
 const searchCategories = ["All", "Men", "Women", "Kids"] as const;
+const autoSearchHints = [
+  "sherwani for groom",
+  "men formal shoes",
+  "women festive wear",
+  "kids kurta set",
+  "bridal lehenga collection",
+  "premium lawn dresses",
+] as const;
+
+const trendingSearches = [
+  "Farshi Shalwar",
+  "Lawn",
+  "Silk",
+  "Eid Collection",
+  "Rang E Haya",
+  "Saree",
+  "Kaftan",
+  "Velvet",
+  "Farshi",
+  "Maria B",
+] as const;
 
 type CountryOption = {
   code: string;
@@ -71,8 +96,14 @@ function Flag({ code }: { code: string }) {
 }
 
 export function Header() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<(typeof searchCategories)[number]>("All");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isMobileChromeVisible, setIsMobileChromeVisible] = useState(true);
+  const [animatedSearchHint, setAnimatedSearchHint] = useState("");
+  const [delayedSearchTerm, setDelayedSearchTerm] = useState("");
+  const [isSearchSuggestionOpen, setIsSearchSuggestionOpen] = useState(false);
 
   const defaultCountry = countries[0];
   const [selectedCountryCode, setSelectedCountryCode] = useState(defaultCountry.code);
@@ -90,6 +121,8 @@ export function Header() {
   const categoryRef = useRef<HTMLDivElement | null>(null);
   const currencyRef = useRef<HTMLDivElement | null>(null);
   const mobileCountrySheetRef = useRef<HTMLDivElement | null>(null);
+  const desktopSearchRef = useRef<HTMLFormElement | null>(null);
+  const mobileSearchRef = useRef<HTMLFormElement | null>(null);
 
   const selectedCountry = useMemo(
     () => countries.find((country) => country.code === selectedCountryCode) ?? defaultCountry,
@@ -116,6 +149,26 @@ export function Header() {
     return countries.filter((country) => country.name.toLowerCase().includes(query));
   }, [countrySearch]);
 
+  const searchSuggestions = useMemo(() => {
+    const allNames = [
+      ...searchCatalogProducts.map((product) => `${product.brand} ${product.name}`),
+      ...haseneaProducts.map((product) => `${product.brand} ${product.name}`),
+    ];
+
+    const uniqueNames = Array.from(new Set(allNames));
+    const query = delayedSearchTerm.toLowerCase();
+
+    if (!query) {
+      return [];
+    }
+
+    return uniqueNames
+      .filter((name) => name.toLowerCase().includes(query))
+      .slice(0, 7);
+  }, [delayedSearchTerm]);
+
+  const isTrendingMode = !searchTerm.trim();
+
   useEffect(() => {
     const onWindowPointerDown = (event: PointerEvent) => {
       if (!categoryRef.current?.contains(event.target as Node)) {
@@ -128,11 +181,81 @@ export function Header() {
         setIsCurrencyListOpen(false);
       }
 
+      if (!desktopSearchRef.current?.contains(event.target as Node) && !mobileSearchRef.current?.contains(event.target as Node)) {
+        setIsSearchSuggestionOpen(false);
+      }
+
     };
 
     window.addEventListener("pointerdown", onWindowPointerDown);
     return () => window.removeEventListener("pointerdown", onWindowPointerDown);
   }, [isMobileCountrySheetOpen]);
+
+  useEffect(() => {
+    const trimmed = searchTerm.trim();
+
+    if (!trimmed) {
+      setDelayedSearchTerm("");
+      setIsSearchSuggestionOpen(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setDelayedSearchTerm(trimmed);
+      setIsSearchSuggestionOpen(true);
+    }, 2000);
+
+    return () => window.clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (searchTerm.trim()) {
+      setAnimatedSearchHint("");
+      return;
+    }
+
+    let hintIndex = 0;
+    let typingIntervalId: number | undefined;
+    let nextHintTimeoutId: number | undefined;
+
+    const playHintTyping = () => {
+      const hint = autoSearchHints[hintIndex % autoSearchHints.length];
+      let letterIndex = 0;
+      setAnimatedSearchHint("");
+
+      typingIntervalId = window.setInterval(() => {
+        letterIndex += 1;
+        setAnimatedSearchHint(hint.slice(0, letterIndex));
+
+        if (letterIndex >= hint.length) {
+          if (typingIntervalId) {
+            window.clearInterval(typingIntervalId);
+          }
+
+          nextHintTimeoutId = window.setTimeout(() => {
+            hintIndex += 1;
+            playHintTyping();
+          }, 1400);
+        }
+      }, 55);
+    };
+
+    const initialDelayId = window.setTimeout(() => {
+      playHintTyping();
+    }, 2000);
+
+    return () => {
+      window.clearTimeout(initialDelayId);
+
+      if (typingIntervalId) {
+        window.clearInterval(typingIntervalId);
+      }
+
+      if (nextHintTimeoutId) {
+        window.clearTimeout(nextHintTimeoutId);
+      }
+    };
+  }, [searchTerm]);
 
   useEffect(() => {
     if (!isMobileCountrySheetOpen) {
@@ -152,6 +275,33 @@ export function Header() {
       setMobileSheetView("menu");
     }
   }, [isMobileCountrySheetOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const savedCurrency = window.localStorage.getItem("selected-currency");
+    const savedCountry = window.localStorage.getItem("selected-country");
+
+    if (savedCountry && countries.some((country) => country.code === savedCountry)) {
+      setSelectedCountryCode(savedCountry);
+    }
+
+    if (savedCurrency && currencyOptions.some((option) => option.currency === savedCurrency)) {
+      setSelectedCurrency(savedCurrency);
+    }
+  }, [currencyOptions]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.localStorage.setItem("selected-currency", selectedCurrency);
+    window.localStorage.setItem("selected-country", selectedCountryCode);
+    window.dispatchEvent(new CustomEvent("selected-currency-updated", { detail: { currency: selectedCurrency } }));
+  }, [selectedCurrency, selectedCountryCode]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -188,6 +338,70 @@ export function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const onScroll = () => {
+      if (window.innerWidth >= 1024) {
+        return;
+      }
+
+      const currentScrollY = window.scrollY;
+      const delta = currentScrollY - lastScrollY;
+
+      if (currentScrollY <= 10) {
+        setIsMobileChromeVisible(true);
+        lastScrollY = currentScrollY;
+        return;
+      }
+
+      if (delta > 6) {
+        setIsMobileChromeVisible(false);
+      } else if (delta < -6) {
+        setIsMobileChromeVisible(true);
+      }
+
+      lastScrollY = currentScrollY;
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const effectiveTerm = searchTerm.trim();
+
+    const params = new URLSearchParams();
+
+    if (effectiveTerm) {
+      params.set("q", effectiveTerm);
+    }
+
+    if (selectedCategory !== "All") {
+      params.set("category", selectedCategory);
+    }
+
+    router.push(`/search${params.toString() ? `?${params.toString()}` : ""}`);
+    setIsCategoryOpen(false);
+    setIsSearchSuggestionOpen(false);
+  };
+
+  const selectSuggestion = (value: string) => {
+    setSearchTerm(value);
+    setDelayedSearchTerm(value);
+    setIsSearchSuggestionOpen(false);
+
+    const params = new URLSearchParams();
+    params.set("q", value);
+
+    if (selectedCategory !== "All") {
+      params.set("category", selectedCategory);
+    }
+
+    router.push(`/search?${params.toString()}`);
+  };
+
   return (
     <header className="border-b border-[var(--border)] bg-white">
       <div className="w-full px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
@@ -213,7 +427,12 @@ export function Header() {
                 {selectedCurrency}
               </button>
 
-              <button aria-label="Cart" className="relative rounded-full p-1.5 transition hover:bg-black/5">
+              <button
+                type="button"
+                onClick={() => router.push('/bag')}
+                aria-label="Cart"
+                className="relative rounded-full p-1.5 transition hover:bg-black/5"
+              >
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="h-6 w-6 text-[var(--foreground)]">
                   <path d="M6 7.5h12l-1 10H7L6 7.5Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
                   <path d="M9 7.5a3 3 0 0 1 6 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -414,18 +633,72 @@ export function Header() {
           </div>
 
           <div className="min-w-0 lg:mx-auto lg:w-full lg:max-w-[980px] xl:max-w-[1100px]">
-            <div className="lg:hidden">
-              <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#f7f7f7] px-3 py-2.5 text-[var(--muted)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <div
+              className={`sticky top-0 z-[88] bg-white pt-1 transition-transform duration-300 lg:hidden ${
+                isMobileChromeVisible ? "translate-y-0" : "-translate-y-full"
+              }`}
+            >
+              <form
+                ref={mobileSearchRef}
+                onSubmit={submitSearch}
+                className="relative flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[#f7f7f7] px-3 py-2.5 text-[var(--muted)] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              >
                 <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
                   <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
                   <path d="M16.5 16.5 21 21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
-                <input aria-label="Search" placeholder="Search for products, brands and categories" className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
-              </div>
+                <input
+                  aria-label="Search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  onFocus={() => setIsSearchSuggestionOpen(true)}
+                  placeholder={animatedSearchHint || "Search for products, brands and categories"}
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]"
+                />
+
+                {isSearchSuggestionOpen && (isTrendingMode || searchSuggestions.length > 0) ? (
+                  <ul className="absolute left-0 right-0 top-[calc(100%+8px)] z-[80] max-h-[290px] overflow-y-auto rounded-xl border border-[var(--border)] bg-white p-2 shadow-[0_14px_30px_rgba(0,0,0,0.16)]">
+                    {isTrendingMode ? (
+                      <li className="px-2 pb-2 pt-1">
+                        <p className="text-[13px] font-semibold text-[#666]">Trending Searches</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {trendingSearches.map((trend) => (
+                            <button
+                              key={`mobile-trending-${trend}`}
+                              type="button"
+                              onClick={() => selectSuggestion(trend)}
+                              className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#d6d8db] bg-[#f7f7f8] px-3 py-1.5 text-[13px] font-medium text-[#4a4a4a]"
+                            >
+                              <span className="text-[12px]" aria-hidden="true">🔥</span>
+                              {trend}
+                            </button>
+                          ))}
+                        </div>
+                      </li>
+                    ) : (
+                      searchSuggestions.map((suggestion) => (
+                        <li key={`mobile-${suggestion}`}>
+                          <button
+                            type="button"
+                            onClick={() => selectSuggestion(suggestion)}
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--foreground)] transition hover:bg-black/[0.04]"
+                          >
+                            {suggestion}
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                ) : null}
+              </form>
             </div>
 
             <div className="hidden items-center gap-4 lg:flex lg:gap-8">
-              <div className="relative z-20 flex min-w-0 flex-1 items-center overflow-visible rounded-xl border border-[var(--border)] bg-[#f7f7f7] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+              <form
+                ref={desktopSearchRef}
+                onSubmit={submitSearch}
+                className="relative z-20 flex min-w-0 flex-1 items-center overflow-visible rounded-xl border border-[var(--border)] bg-[#f7f7f7] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              >
                 <div ref={categoryRef} className="relative">
                   <button
                     type="button"
@@ -468,9 +741,53 @@ export function Header() {
                     <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
                     <path d="M16.5 16.5 21 21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                   </svg>
-                  <input aria-label="Search" placeholder='Search for "sherwani for groom"' className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]" />
+                  <input
+                    aria-label="Search"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    onFocus={() => setIsSearchSuggestionOpen(true)}
+                    placeholder={animatedSearchHint || 'Search for "sherwani for groom"'}
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-[var(--muted)]"
+                  />
                 </div>
-              </div>
+
+                {isSearchSuggestionOpen && (isTrendingMode || searchSuggestions.length > 0) ? (
+                  <div className="absolute left-[18px] right-[18px] top-[calc(100%+10px)] z-[80] rounded-2xl border border-[#d6d8db] bg-white p-4 shadow-[0_16px_36px_rgba(0,0,0,0.16)]">
+                    {isTrendingMode ? (
+                      <>
+                        <p className="text-[13px] font-semibold text-[#666]">Trending Searches</p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {trendingSearches.map((trend) => (
+                            <button
+                              key={`desktop-trending-${trend}`}
+                              type="button"
+                              onClick={() => selectSuggestion(trend)}
+                              className="inline-flex items-center gap-1.5 rounded-[10px] border border-[#d6d8db] bg-[#f7f7f8] px-3 py-1.5 text-[14px] font-medium text-[#4a4a4a]"
+                            >
+                              <span className="text-[13px]" aria-hidden="true">🔥</span>
+                              {trend}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <ul className="max-h-[320px] overflow-y-auto">
+                        {searchSuggestions.map((suggestion) => (
+                          <li key={`desktop-${suggestion}`}>
+                            <button
+                              type="button"
+                              onClick={() => selectSuggestion(suggestion)}
+                              className="w-full rounded-lg px-3 py-2 text-left text-sm text-[var(--foreground)] transition hover:bg-black/[0.04]"
+                            >
+                              {suggestion}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ) : null}
+              </form>
 
               <div className="items-center gap-8 text-sm lg:flex">
                 <div ref={currencyRef} className="relative text-right">
@@ -618,7 +935,12 @@ export function Header() {
                   ) : null}
                 </div>
 
-                <button aria-label="Cart" className="relative rounded-full p-2 transition hover:bg-black/5">
+                <button
+                  type="button"
+                  onClick={() => router.push('/bag')}
+                  aria-label="Cart"
+                  className="relative rounded-full p-2 transition hover:bg-black/5"
+                >
                   <svg viewBox="0 0 24 24" aria-hidden="true" className="h-7 w-7 text-[var(--foreground)]">
                     <path d="M6 7.5h12l-1 10H7L6 7.5Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
                     <path d="M9 7.5a3 3 0 0 1 6 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -707,6 +1029,8 @@ export function Header() {
           </div>
         </div>
       </div>
+
+      <MobileBottomNav />
     </header>
   );
 }

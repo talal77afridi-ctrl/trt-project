@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { formatCurrencyFromPKR } from '@/lib/currency';
+import { useSelectedCurrency } from '@/hooks/use-selected-currency';
 
 interface ProductFiltersProps {
   onFilterChange: (filters: FilterState) => void;
@@ -15,6 +17,7 @@ interface FilterState {
 }
 
 export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
+  const selectedCurrency = useSelectedCurrency();
   const [filters, setFilters] = useState<FilterState>({
     category: [],
     priceRange: [10000, 30000],
@@ -111,7 +114,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
         <h3 className="font-bold text-gray-900 text-sm">Price Range</h3>
         <div className="space-y-3 border-t border-gray-100 pt-4">
           <div>
-            <label className="text-xs text-gray-600 font-medium">Min: PKR {filters.priceRange[0].toLocaleString()}</label>
+            <label className="text-xs text-gray-600 font-medium">Min: {formatCurrencyFromPKR(filters.priceRange[0], selectedCurrency)}</label>
             <input
               type="range"
               min="10000"
@@ -129,7 +132,7 @@ export function ProductFilters({ onFilterChange }: ProductFiltersProps) {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-600 font-medium">Max: PKR {filters.priceRange[1].toLocaleString()}</label>
+            <label className="text-xs text-gray-600 font-medium">Max: {formatCurrencyFromPKR(filters.priceRange[1], selectedCurrency)}</label>
             <input
               type="range"
               min="10000"

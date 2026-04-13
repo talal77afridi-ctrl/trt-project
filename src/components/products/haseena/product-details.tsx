@@ -3,7 +3,11 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { haseneaProducts, HaseneaProduct } from '@/data/products/haseena/haseena-products';
+import { formatCurrencyFromPKR } from '@/lib/currency';
+import { useSelectedCurrency } from '@/hooks/use-selected-currency';
+import { MobileCurrencyPicker } from '@/components/common/mobile-currency-picker';
 
 interface ProductDetailsProps {
   productId: string;
@@ -39,12 +43,14 @@ export function ProductDetails({
   quickBuyOnly = false,
   stylingVideoSources = [],
 }: ProductDetailsProps) {
+  const router = useRouter();
+  const selectedCurrency = useSelectedCurrency();
   const product = products.find((p) => p.id === productId);
   const [mainImageIndex, setMainImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [addToBagMessage, setAddToBagMessage] = useState('');
-  const stylingVideosRef = useRef<HTMLDivElement | null>(null);
+  const [cartCount, setCartCount] = useState(0);
   const thumbnailsContainerRef = useRef<HTMLDivElement | null>(null);
   const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -104,11 +110,89 @@ export function ProductDetails({
   const occasionLine = occasionHooks[(variantSeed + 1) % occasionHooks.length];
   const careLine = careHooks[(variantSeed + 2) % careHooks.length];
   const hasStylingVideos = stylingVideoSources.length > 0;
+  const breadcrumbText = 'Women > Clothing > Eastern Ready to wear > Kurta Set';
   const mediaItems = [
     ...productImages.map((src) => ({ type: 'image' as const, src })),
     ...stylingVideoSources.map((src) => ({ type: 'video' as const, src })),
   ];
   const selectedMedia = mediaItems[mainImageIndex] ?? mediaItems[0];
+
+  const handleAddToBag = () => {
+    if (!selectedSize) {
+      setAddToBagMessage('Please select a size first');
+      return;
+    }
+
+    const currentCount = Number(window.localStorage.getItem('cart-count') || '0');
+    const nextCount = currentCount + quantity;
+    const existingItems = JSON.parse(window.localStorage.getItem('cart-items') || '[]') as Array<{
+      id: string;
+      size: string;
+      quantity: number;
+      name: string;
+      brand: string;
+      price: number;
+      image: string;
+    }>;
+
+    const existingIndex = existingItems.findIndex(
+      (item) => item.id === product.id && item.size === selectedSize
+    );
+
+    if (existingIndex >= 0) {
+      existingItems[existingIndex].quantity += quantity;
+    } else {
+      existingItems.push({
+        id: product.id,
+        size: selectedSize,
+        quantity,
+        name: product.name,
+        brand: product.brand,
+        price: product.price,
+        image: product.images[0],
+      });
+    }
+
+    window.localStorage.setItem('cart-items', JSON.stringify(existingItems));
+    window.localStorage.setItem('cart-count', String(nextCount));
+    window.dispatchEvent(new CustomEvent('cart-count-updated', { detail: { count: nextCount } }));
+    setAddToBagMessage(`Added ${quantity} item(s) of size ${selectedSize} to bag`);
+  };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const syncCartCount = () => {
+      setCartCount(Number(window.localStorage.getItem('cart-count') || '0'));
+    };
+
+    const onCartCountUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<{ count?: number }>;
+      if (typeof customEvent.detail?.count === 'number') {
+        setCartCount(customEvent.detail.count);
+        return;
+      }
+
+      syncCartCount();
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === 'cart-count') {
+        syncCartCount();
+      }
+    };
+
+    syncCartCount();
+    window.addEventListener('cart-count-updated', onCartCountUpdated as EventListener);
+    window.addEventListener('storage', onStorage);
+
+    return () => {
+      window.removeEventListener('cart-count-updated', onCartCountUpdated as EventListener);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
 
   useEffect(() => {
     const container = thumbnailsContainerRef.current;
@@ -129,14 +213,87 @@ export function ProductDetails({
   }, [mainImageIndex]);
 
   return (
-    <div className="space-y-8">
-      <div className="text-[13px] text-[#637082]">
-        Women <span className="px-2">&gt;</span> Clothing <span className="px-2">&gt;</span> Eastern Ready to wear <span className="px-2">&gt;</span> Kurta Set
+    <div className="space-y-8 pb-28 lg:pb-0">
+      <div className="flex items-center justify-between border-b border-gray-200 pb-2 lg:hidden">
+        <div className="flex min-w-0 items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="inline-flex h-8 w-8 items-center justify-center text-[#1b2330]"
+          aria-label="Go back"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <path d="M12.5 5 7.5 10 12.5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <div className="relative h-7 w-7 overflow-hidden rounded-full border border-[#d9dde3] bg-[#eceff1]">
+          <Image src={product.images[0]} alt={product.brand} fill className="object-cover" sizes="28px" />
+        </div>
+        <div className="leading-tight">
+          <p className="line-clamp-1 text-[1rem] font-semibold text-[#1b2330]">{product.brand}</p>
+          <p className="line-clamp-1 text-[0.88rem] text-[#596477]">{product.name.split('-')[0].trim()}</p>
+        </div>
+        </div>
+
+        <div className="flex items-center gap-3 pl-2">
+          <MobileCurrencyPicker />
+
+          <button
+            type="button"
+            onClick={() => router.push('/bag')}
+            aria-label="Bag"
+            className="relative rounded-full p-1 text-[#343f4c]"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
+              <path d="M6 7.5h12l-1 10H7L6 7.5Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+              <path d="M9 7.5a3 3 0 0 1 6 0" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            {cartCount > 0 ? (
+              <span className="absolute -right-1 -top-1 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[#e41e2d] px-1 text-[9px] font-semibold text-white">
+                {cartCount > 99 ? '99+' : cartCount}
+              </span>
+            ) : null}
+          </button>
+        </div>
+      </div>
+
+      <div className="hidden overflow-x-auto whitespace-nowrap text-[13px] text-[#637082] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:block">
+        <span className="inline-flex items-center">
+          {breadcrumbText.replace(/>/g, ' > ')}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[420px_minmax(0,1fr)]">
         <div>
-          <div className="grid grid-cols-[52px_minmax(0,1fr)] gap-4 sm:grid-cols-[58px_minmax(0,1fr)]">
+          <div className="lg:hidden">
+            <div className="flex gap-3 overflow-x-auto px-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory">
+              {mediaItems.map((media, idx) => (
+                <button
+                  key={`mobile-media-${media.src}-${idx}`}
+                  type="button"
+                  onClick={() => setMainImageIndex(idx)}
+                  className="relative aspect-[4/5] w-[88%] shrink-0 snap-start overflow-hidden rounded-[12px] bg-[#eceff1]"
+                >
+                  {media.type === 'video' ? (
+                    <video
+                      src={media.src}
+                      className="h-full w-full object-cover"
+                      controls={mainImageIndex === idx}
+                      autoPlay={mainImageIndex === idx}
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                    />
+                  ) : (
+                    <Image src={media.src} alt={`${product.name} ${idx + 1}`} fill className="object-cover" sizes="88vw" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="hidden grid-cols-[52px_minmax(0,1fr)] gap-4 sm:grid-cols-[58px_minmax(0,1fr)] lg:grid">
             <div ref={thumbnailsContainerRef} className="max-h-[520px] space-y-3 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {mediaItems.map((media, idx) => (
                 <button
@@ -227,10 +384,10 @@ export function ProductDetails({
             </div>
           </div>
 
-          <div>
+          <div className="hidden lg:block">
             <h3 className="mt-4 text-[1rem] font-normal text-[#1a1f27]">Styling Videos</h3>
             <div className="relative mt-3 pr-10">
-              <div ref={stylingVideosRef} className="flex gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                 {hasStylingVideos
                   ? stylingVideoSources.map((videoSrc, idx) => (
                       <button
@@ -254,34 +411,22 @@ export function ProductDetails({
                       </div>
                     ))}
               </div>
-              {(hasStylingVideos ? stylingVideoSources.length : productImages.length) > 4 ? (
-                <button
-                  type="button"
-                  onClick={() => stylingVideosRef.current?.scrollBy({ left: 200, behavior: 'smooth' })}
-                  aria-label="More styling videos"
-                  className="absolute right-0 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#d6dbe1] bg-white text-[#5b6676] shadow"
-                >
-                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none">
-                    <path d="M7.5 5 12.5 10 7.5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              ) : null}
             </div>
           </div>
         </div>
 
         <div className="space-y-5">
           <div className="rounded-xl border border-[#d8dde3] bg-white p-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-[1.2rem] font-semibold leading-tight text-[#131821]">{product.brand}</h1>
+            <div className="flex items-start justify-end lg:justify-between">
+              <div className="hidden lg:block">
+                <h1 className="text-[1rem] lg:text-[1.2rem] font-semibold leading-tight text-[#131821]">{product.brand}</h1>
                 <p className="mt-1 text-[14px] text-[#596477]">{product.name.split('-')[0].trim()}</p>
               </div>
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f6ece9] text-[#9f6f65]">☼</span>
             </div>
 
             <div className="mt-4 flex items-center justify-between">
-              <p className="text-[34px] font-semibold text-[#141923]">PKR {product.price.toLocaleString()}</p>
+              <p className="text-[1rem] font-semibold text-[#141923] lg:text-[34px]">{formatCurrencyFromPKR(product.price, selectedCurrency)}</p>
               <div className="flex gap-2 text-[#4f5965]">
                 <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full border border-[#d6dbe1]">↗</button>
                 <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full border border-[#d6dbe1]">♡</button>
@@ -355,61 +500,23 @@ export function ProductDetails({
               </div>
             </div>
 
-            <div className="mt-4 space-y-2">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!selectedSize) {
-                    setAddToBagMessage('Please select a size first');
-                    return;
-                  }
-
-                  const currentCount = Number(window.localStorage.getItem('cart-count') || '0');
-                  const nextCount = currentCount + quantity;
-                  const existingItems = JSON.parse(window.localStorage.getItem('cart-items') || '[]') as Array<{
-                    id: string;
-                    size: string;
-                    quantity: number;
-                    name: string;
-                    brand: string;
-                    price: number;
-                    image: string;
-                  }>;
-
-                  const existingIndex = existingItems.findIndex(
-                    (item) => item.id === product.id && item.size === selectedSize
-                  );
-
-                  if (existingIndex >= 0) {
-                    existingItems[existingIndex].quantity += quantity;
-                  } else {
-                    existingItems.push({
-                      id: product.id,
-                      size: selectedSize,
-                      quantity,
-                      name: product.name,
-                      brand: product.brand,
-                      price: product.price,
-                      image: product.images[0],
-                    });
-                  }
-
-                  window.localStorage.setItem('cart-items', JSON.stringify(existingItems));
-                  window.localStorage.setItem('cart-count', String(nextCount));
-                  window.dispatchEvent(new CustomEvent('cart-count-updated', { detail: { count: nextCount } }));
-                  setAddToBagMessage(`Added ${quantity} item(s) of size ${selectedSize} to bag`);
-                }}
-                className="w-full rounded-lg bg-[#0f1116] py-2.5 text-[15px] font-semibold text-white"
-              >
-                Add To Bag
-              </button>
+            <div className="mt-4">
+              <div className="hidden space-y-2 lg:block">
+                <button
+                  type="button"
+                  onClick={handleAddToBag}
+                  className="w-full rounded-lg bg-[#0f1116] py-2.5 text-[15px] font-semibold text-white"
+                >
+                  Add To Bag
+                </button>
+                <button type="button" className="w-full rounded-lg border border-[#d6dbe1] py-2.5 text-[15px] text-[#222a34]">Buy Now</button>
+              </div>
               {selectedSize ? (
                 <p className="text-[13px] text-[#4d5868]">
-                  Selected size: <span className="font-semibold">{selectedSize}</span> · Price: <span className="font-semibold">PKR {selectedTotal.toLocaleString()}</span>
+                  Selected size: <span className="font-semibold">{selectedSize}</span> · Price: <span className="font-semibold">{formatCurrencyFromPKR(selectedTotal, selectedCurrency)}</span>
                 </p>
               ) : null}
               {addToBagMessage ? <p className="text-[13px] text-[#2e425f]">{addToBagMessage}</p> : null}
-              <button type="button" className="w-full rounded-lg border border-[#d6dbe1] py-2.5 text-[15px] text-[#222a34]">Buy Now</button>
             </div>
 
             <div className="mt-3 flex items-center justify-between rounded-xl border border-[#d6dbe1] px-3 py-2 text-[14px]">
@@ -418,6 +525,34 @@ export function ProductDetails({
                 <span className="ml-2 text-[#2a3340]">Earn <span className="font-semibold text-[#d06a42]">258 points</span> on this purchase</span>
               </div>
               <span className="text-[#6f7a88]">›</span>
+            </div>
+
+            <div className="mt-4 lg:hidden">
+              <h3 className="text-[1rem] font-normal text-[#1a1f27]">Styling Videos</h3>
+              <div className="mt-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                {hasStylingVideos
+                  ? stylingVideoSources.map((videoSrc, idx) => (
+                      <button
+                        key={`mobile-v-${idx}`}
+                        type="button"
+                        onClick={() => setMainImageIndex(productImages.length + idx)}
+                        className="relative h-[96px] w-[72px] shrink-0 overflow-hidden rounded bg-[#e7ebef]"
+                      >
+                        <video src={videoSrc} className="h-full w-full object-cover" muted loop playsInline preload="metadata" />
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-black/45 text-white">▶</span>
+                        </span>
+                      </button>
+                    ))
+                  : productImages.map((videoThumb, idx) => (
+                      <div key={`mobile-v-${idx}`} className="relative h-[96px] w-[72px] shrink-0 overflow-hidden rounded bg-[#e7ebef]">
+                        <Image src={videoThumb} alt={`video ${idx + 1}`} fill className="object-cover" />
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/85 text-[#525c68]">▶</span>
+                        </span>
+                      </div>
+                    ))}
+              </div>
             </div>
 
             {!quickBuyOnly ? (
@@ -510,31 +645,35 @@ export function ProductDetails({
               Read more reviews
             </button>
           </div>
+
+          <div className="overflow-x-auto whitespace-nowrap text-[13px] text-[#637082] [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden lg:hidden">
+            <span className="inline-flex items-center">{breadcrumbText.replace(/>/g, ' > ')}</span>
+          </div>
         </div>
         <div />
       </div>
 
-      <div className="space-y-8 border-t border-[#dde2e8] pt-8">
+      <div className="space-y-6 border-t border-[#dde2e8] pt-6 lg:space-y-8 lg:pt-8">
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-[20px] font-semibold text-[#141b25]">More from the collection</h3>
-            <div className="flex gap-2">
+            <h3 className="text-[1.05rem] font-semibold text-[#141b25] lg:text-[20px]">More from the collection</h3>
+            <div className="hidden gap-2 lg:flex">
               <button type="button" className="h-10 w-10 rounded-full border border-[#d3d8df]">‹</button>
               <button type="button" className="h-10 w-10 rounded-full border border-[#d3d8df]">›</button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             {collectionProducts.map((item) => (
               <Link key={item.id} href={`${basePath}/${item.id}`} className="group">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-[#edf0f3]">
+                <div className="relative aspect-[4/5] overflow-hidden rounded-none bg-[#edf0f3] lg:rounded-lg">
                   <Image src={item.images[0]} alt={item.name} fill className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
-                  <button type="button" className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#6a7480]">♡</button>
+                  <button type="button" className="absolute right-3 top-3 hidden h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#6a7480] lg:flex">♡</button>
                 </div>
-                <div className="pt-2">
-                  <p className="text-[30px] lg:text-[16px] font-semibold text-[#1b212a]">PKR {item.price.toLocaleString()}</p>
-                  <p className="text-[34px] lg:text-[13px] text-[#4f5b69]">{item.brand} · {item.name.split('-')[0].trim()}</p>
-                  <div className="mt-1 inline-flex items-center gap-1 rounded-[8px] bg-[#1d63df] px-2 py-1 text-[26px] lg:text-[12px] font-semibold text-white">⚡ Express</div>
+                <div className="pt-1.5 lg:pt-2">
+                  <p className="text-[1.02rem] font-semibold leading-tight text-[#1b212a] lg:text-[16px]">{formatCurrencyFromPKR(item.price, selectedCurrency)}</p>
+                  <p className="line-clamp-2 text-[0.78rem] text-[#4f5b69] lg:text-[13px]">{item.brand} · {item.name.split('-')[0].trim()}</p>
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-none bg-[#1d63df] px-2 py-0.5 text-[0.62rem] font-semibold text-white lg:rounded-[8px] lg:py-1 lg:text-[12px]">⚡ Express</div>
                 </div>
               </Link>
             ))}
@@ -543,24 +682,24 @@ export function ProductDetails({
 
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-[20px] font-semibold text-[#141b25]">Similar Products</h3>
-            <div className="flex gap-2">
+            <h3 className="text-[1.05rem] font-semibold text-[#141b25] lg:text-[20px]">Similar Products</h3>
+            <div className="hidden gap-2 lg:flex">
               <button type="button" className="h-10 w-10 rounded-full border border-[#d3d8df]">‹</button>
               <button type="button" className="h-10 w-10 rounded-full border border-[#d3d8df]">›</button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             {similarProducts.map((item) => (
               <Link key={item.id} href={`${basePath}/${item.id}`} className="group">
-                <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-[#edf0f3]">
-                  <span className="absolute left-3 top-3 z-20 rounded-[7px] bg-[#eb1f24] px-3 py-1 text-[12px] font-semibold text-white">-{item.discount}%</span>
+                <div className="relative aspect-[4/5] overflow-hidden rounded-none bg-[#edf0f3] lg:rounded-lg">
+                  <span className="absolute left-2 top-2 z-20 rounded-none bg-[#eb1f24] px-2 py-0.5 text-[11px] font-semibold text-white lg:left-3 lg:top-3 lg:rounded-[7px] lg:px-3 lg:py-1 lg:text-[12px]">-{item.discount}%</span>
                   <Image src={item.images[0]} alt={item.name} fill className="object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
                 </div>
-                <div className="pt-2">
-                  <p className="text-[30px] lg:text-[16px] font-semibold text-[#1b212a]">PKR {item.price.toLocaleString()}</p>
-                  <p className="text-[34px] lg:text-[13px] text-[#4f5b69]">{item.brand}</p>
-                  <div className="mt-1 inline-flex items-center gap-1 rounded-[8px] bg-[#1d63df] px-2 py-1 text-[26px] lg:text-[12px] font-semibold text-white">⚡ Express</div>
+                <div className="pt-1.5 lg:pt-2">
+                  <p className="text-[1.02rem] font-semibold leading-tight text-[#1b212a] lg:text-[16px]">{formatCurrencyFromPKR(item.price, selectedCurrency)}</p>
+                  <p className="line-clamp-1 text-[0.78rem] text-[#4f5b69] lg:text-[13px]">{item.brand}</p>
+                  <div className="mt-1 inline-flex items-center gap-1 rounded-none bg-[#1d63df] px-2 py-0.5 text-[0.62rem] font-semibold text-white lg:rounded-[8px] lg:py-1 lg:text-[12px]">⚡ Express</div>
                 </div>
               </Link>
             ))}
@@ -586,7 +725,7 @@ export function ProductDetails({
             <button
               type="button"
               aria-label="More story tags"
-              className="absolute right-0 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#d6d8db] bg-white text-[#4a5564]"
+              className="absolute right-0 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#d6d8db] bg-white text-[#4a5564] lg:flex"
             >
               <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none">
                 <path d="M7.5 5 12.5 10 7.5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
@@ -620,6 +759,21 @@ export function ProductDetails({
       </div>
       </>
       ) : null}
+
+      <div className="fixed inset-x-0 bottom-[56px] z-40 border-t border-[#dfe3e8] bg-white/95 backdrop-blur lg:hidden">
+        <div className="mx-auto grid w-full max-w-[520px] grid-cols-2 gap-2 px-4 py-3">
+          <button type="button" className="h-11 rounded-[10px] border border-[#d6dbe1] bg-white text-[1rem] font-medium text-[#222a34]">
+            Buy Now
+          </button>
+          <button
+            type="button"
+            onClick={handleAddToBag}
+            className="h-11 rounded-[10px] bg-[#0f1116] text-[1rem] font-semibold text-white"
+          >
+            Add To Bag
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

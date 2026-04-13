@@ -16,9 +16,15 @@ interface ProductListingProps {
   sortBy?: 'newest' | 'price-low' | 'price-high' | 'rating';
   products?: HaseneaProduct[];
   basePath?: string;
+  mobileControlMode?: 'full' | 'secondaryOnly';
 }
 
-export function ProductListing({ sortBy = 'newest', products = haseneaProducts, basePath = '/products/haseena' }: ProductListingProps) {
+export function ProductListing({
+  sortBy = 'newest',
+  products = haseneaProducts,
+  basePath = '/products/haseena',
+  mobileControlMode = 'full',
+}: ProductListingProps) {
   const [filters, setFilters] = useState<FilterState>({
     category: [],
     priceRange: [10000, 50000],
@@ -74,38 +80,46 @@ export function ProductListing({ sortBy = 'newest', products = haseneaProducts, 
 
   return (
     <div className="min-w-0">
-      <div className="mb-5 flex items-center gap-3 overflow-x-auto">
-        <button className="flex items-center gap-2 rounded-[11px] border border-[#d6d8db] bg-white px-4 py-2 text-[15px] text-[#383f49]">
+      <div className="mb-4 flex flex-nowrap items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <button
+          className={`${mobileControlMode === 'secondaryOnly' ? 'hidden lg:flex' : 'flex'} shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-[#d6d8db] bg-white px-3.5 py-2 text-[14px] text-[#383f49]`}
+        >
           Category
           <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none">
             <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <button className="flex h-[42px] w-[42px] lg:h-[40px] lg:w-[40px] items-center justify-center rounded-[11px] border border-[#d6d8db] bg-white text-[#383f49]">
+        <button
+          className={`${mobileControlMode === 'secondaryOnly' ? 'hidden lg:flex' : 'flex'} h-[40px] w-[40px] shrink-0 items-center justify-center rounded-[10px] border border-[#d6d8db] bg-white text-[#383f49]`}
+        >
           <svg className="h-5 w-5" viewBox="0 0 20 20" fill="none">
             <path d="M4 6h12M6.5 10h7M8.5 14h3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
           </svg>
         </button>
-        <button className="flex items-center gap-2 rounded-[11px] border border-[#d6d8db] bg-white px-4 py-2 text-[15px] text-[#383f49]">
+        <button
+          className={`${mobileControlMode === 'secondaryOnly' ? 'hidden lg:flex' : 'flex'} shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-[#d6d8db] bg-white px-3.5 py-2 text-[14px] text-[#383f49]`}
+        >
           Sort By
           <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none">
             <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <button className="flex items-center gap-2 rounded-[11px] border border-[#d6d8db] bg-white px-4 py-2 text-[15px] text-[#383f49]">
+        <button
+          className={`${mobileControlMode === 'secondaryOnly' ? 'hidden lg:flex' : 'flex'} shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-[#d6d8db] bg-white px-3.5 py-2 text-[14px] text-[#383f49]`}
+        >
           In-stock
           <span className="relative h-6 w-11 rounded-full bg-[#e5e7eb]">
             <span className="absolute right-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow" />
           </span>
         </button>
-        <button className="flex items-center gap-2 rounded-[11px] border border-[#d6d8db] bg-white px-4 py-2 text-[15px] text-[#383f49]">Fabric</button>
-        <button className="flex items-center gap-2 rounded-[11px] border border-[#d6d8db] bg-white px-4 py-2 text-[15px] text-[#383f49]">Price</button>
-        <button className="flex items-center gap-2 rounded-[11px] border border-[#d6d8db] bg-white px-4 py-2 text-[15px] text-[#383f49]">Size</button>
-        <button className="flex items-center gap-2 rounded-[11px] border border-[#d6d8db] bg-white px-4 py-2 text-[15px] text-[#383f49]">Color (1)</button>
-        <button className="flex items-center gap-2 rounded-[11px] border border-[#d6d8db] bg-white px-4 py-2 text-[15px] text-[#383f49]">Season</button>
+        <button className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-[#d6d8db] bg-white px-3.5 py-2 text-[14px] text-[#383f49]">Fabric</button>
+        <button className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-[#d6d8db] bg-white px-3.5 py-2 text-[14px] text-[#383f49]">Price</button>
+        <button className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-[#d6d8db] bg-white px-3.5 py-2 text-[14px] text-[#383f49]">Size</button>
+        <button className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-[#d6d8db] bg-white px-3.5 py-2 text-[14px] text-[#383f49]">Color (1)</button>
+        <button className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-[10px] border border-[#d6d8db] bg-white px-3.5 py-2 text-[14px] text-[#383f49]">Season</button>
       </div>
 
-      <div className="mb-6 flex items-center justify-end gap-3">
+      <div className="mb-4 hidden items-center justify-end gap-3 sm:flex">
         <span className="text-[14px] text-[#5a6371]">Sort by:</span>
         <select
           value={currentSort}
@@ -121,7 +135,7 @@ export function ProductListing({ sortBy = 'newest', products = haseneaProducts, 
 
         {/* Products Grid */}
         {filteredAndSortedProducts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredAndSortedProducts.map(product => (
               <ProductCard key={product.id} product={product} basePath={basePath} />
             ))}

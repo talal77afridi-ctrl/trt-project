@@ -2,8 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { homeSections } from "@/data/home/home-sections";
+import { formatCurrencyFromPKR, parsePriceLabelToPKR } from "@/lib/currency";
+import { useSelectedCurrency } from "@/hooks/use-selected-currency";
 
 export function StylingVideosSection() {
+  const selectedCurrency = useSelectedCurrency();
   const sliderRef = useRef<HTMLUListElement | null>(null);
   const modalListRef = useRef<HTMLDivElement | null>(null);
   const [activeVideoIndex, setActiveVideoIndex] = useState<number | null>(null);
@@ -145,7 +148,7 @@ export function StylingVideosSection() {
 
                   <figcaption className="absolute bottom-4 left-4 text-white">
                     <div className="text-[1.06rem] font-medium leading-tight">{video.title}</div>
-                    <div className="mt-1 text-[1.2rem] font-semibold leading-tight">{video.price}</div>
+                    <div className="mt-1 text-[1.2rem] font-semibold leading-tight">{formatCurrencyFromPKR(parsePriceLabelToPKR(video.price), selectedCurrency)}</div>
                   </figcaption>
                 </figure>
               </button>
@@ -225,8 +228,8 @@ export function StylingVideosSection() {
                           <div className="min-w-0 flex-1">
                             <div className="truncate text-[1.08rem] font-medium leading-tight">{video.title}</div>
                             <div className="mt-1 flex items-center gap-2 text-[1.95rem]">
-                              <span className="text-[2rem] font-semibold leading-tight">{video.price}</span>
-                              <span className="text-[0.95rem] text-[#7a7a7a] line-through">{meta.oldPrice}</span>
+                              <span className="text-[2rem] font-semibold leading-tight">{formatCurrencyFromPKR(parsePriceLabelToPKR(video.price), selectedCurrency)}</span>
+                              <span className="text-[0.95rem] text-[#7a7a7a] line-through">{formatCurrencyFromPKR(parsePriceLabelToPKR(meta.oldPrice), selectedCurrency)}</span>
                               <span className="rounded-full bg-[#fff2f1] px-2 py-0.5 text-[0.92rem] font-semibold text-[#e04f44]">{meta.discount}</span>
                             </div>
                           </div>

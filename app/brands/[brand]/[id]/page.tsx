@@ -2,6 +2,7 @@ import { TopBar } from '@/components/top-bar';
 import { Header } from '@/components/header';
 import { SidebarNav } from '@/components/sidebar-nav';
 import { Footer } from '@/components/footer';
+import { MobileBottomNav } from '@/components/mobile-bottom-nav';
 import { ProductDetails } from '@/components/products/haseena';
 import { siteSections } from '@/data/site';
 import { getPopularBrandCatalog, popularBrandSlugs } from '@/data/products/popular';
@@ -57,7 +58,9 @@ export default async function BrandProductPage({ params }: BrandProductPageProps
     <div className="min-h-screen bg-[var(--background)]">
       <div className="bg-white lg:fixed lg:inset-x-0 lg:top-0 lg:z-[90]">
         <TopBar />
-        <Header />
+        <div className="hidden lg:block">
+          <Header />
+        </div>
       </div>
 
       <main className="w-full pt-0 lg:pt-[112px]">
@@ -74,6 +77,10 @@ export default async function BrandProductPage({ params }: BrandProductPageProps
 
       <div className="lg:pl-[280px]">
         <Footer />
+      </div>
+
+      <div className="lg:hidden">
+        <MobileBottomNav />
       </div>
     </div>
   );

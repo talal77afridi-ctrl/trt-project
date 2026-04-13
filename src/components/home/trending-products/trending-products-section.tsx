@@ -1,9 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { homeSections } from "@/data/home/home-sections";
+import { formatCurrencyFromPKR, parsePriceLabelToPKR } from "@/lib/currency";
+import { useSelectedCurrency } from "@/hooks/use-selected-currency";
 
 const filters = ["Category", "Sort By", "Fabric", "Price", "Size", "Color", "Brands"];
 
 export function TrendingProductsSection() {
+  const selectedCurrency = useSelectedCurrency();
+
   return (
     <section className="pb-12 pt-10 sm:pt-12">
       <h2 className="text-[1.12rem] font-semibold leading-tight text-[var(--foreground)]">Trending Products</h2>
@@ -100,8 +106,8 @@ export function TrendingProductsSection() {
 
               <div className="mt-3 flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-[1.15rem] font-semibold leading-tight text-[#e53935] sm:text-[1.28rem]">{product.price}</div>
-                  <div className="mt-1 text-[1.02rem] text-[#6b7280] line-through sm:text-[0.96rem]">{product.oldPrice}</div>
+                  <div className="text-[1.15rem] font-semibold leading-tight text-[#e53935] sm:text-[1.28rem]">{formatCurrencyFromPKR(parsePriceLabelToPKR(product.price), selectedCurrency)}</div>
+                  <div className="mt-1 text-[1.02rem] text-[#6b7280] line-through sm:text-[0.96rem]">{formatCurrencyFromPKR(parsePriceLabelToPKR(product.oldPrice), selectedCurrency)}</div>
                   <h3 className="mt-1 truncate text-[1.02rem] font-medium text-[#3f4752] sm:text-[0.98rem]">{product.name}</h3>
                   <p className="truncate text-[1rem] text-[#6b7280] sm:text-[0.95rem]">{product.subtitle}</p>
                 </div>
