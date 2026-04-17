@@ -8,6 +8,17 @@
   --border: rgba(23, 23, 23, 0.12);
   --accent: #6a7f38;
   --header: #111111;
+  --admin-sidebar-bg: #000000;
+  --admin-sidebar-active: #222222;
+  --admin-primary: #000000;
+}
+
+/* Admin theme utility — use instead of bg-[#111111] in admin */
+.admin-primary-bg {
+  background-color: var(--admin-primary, #111111) !important;
+}
+.admin-primary-bg:hover {
+  filter: brightness(1.15);
 }
 
 @theme inline {

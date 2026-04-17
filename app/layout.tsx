@@ -18,6 +18,14 @@ const playfair = Playfair_Display({
 export const metadata: Metadata = {
 	title: "TRT | Premium Fashion Destination",
 	description: "TRT delivers a polished ecommerce storefront with a premium, editorial feel.",
+	icons: {
+		icon: [
+			{ url: "/assets/logo/favicon-round.svg?v=5", type: "image/svg+xml" },
+			{ url: "/assets/logo/logo2.png?v=5", type: "image/png" },
+		],
+		shortcut: "/assets/logo/favicon-round.svg?v=5",
+		apple: "/assets/logo/logo2.png?v=5",
+	},
 };
 
 export default function RootLayout({
