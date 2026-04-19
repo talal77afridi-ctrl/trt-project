@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Backend is plain Node.js — exclude from Next.js/TS lint rules
+    "backend/**",
   ]),
 ]);
 

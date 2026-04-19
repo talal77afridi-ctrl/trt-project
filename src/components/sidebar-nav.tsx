@@ -62,6 +62,23 @@ type SidebarNavProps = {
   items: SidebarItem[];
 };
 
+type AuthFeedback = {
+  type: "success" | "error";
+  message: string;
+};
+
+type OtpSession = {
+  channel: "phone" | "email";
+  contact: string;
+};
+
+type AuthProfile = {
+  name: string;
+  email: string;
+  channel: "phone" | "email";
+  contact: string;
+};
+
 export function SidebarNav({ items }: SidebarNavProps) {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [activeMegaMenu, setActiveMegaMenu] = useState<"women-clothing" | "women-accessories" | "women-footwear" | "women-lingerie" | "men-clothing" | "men-footwear" | "men-accessories" | "men-inner" | "beauty-hair-care" | "beauty-bath-body" | "beauty-makeup" | "beauty-skincare" | "beauty-fragrance" | "kids-girl" | "kids-boy" | "kids-boy-newborn" | "kids-girl-newborn" | null>(null);
@@ -72,6 +89,19 @@ export function SidebarNav({ items }: SidebarNavProps) {
   const [isPhoneTouched, setIsPhoneTouched] = useState(false);
   const [isEmailTouched, setIsEmailTouched] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(true);
+  const [isRequestingOtp, setIsRequestingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [authFeedback, setAuthFeedback] = useState<AuthFeedback | null>(null);
+  const [otpSession, setOtpSession] = useState<OtpSession | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [isOtpTouched, setIsOtpTouched] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [isProfileNameTouched, setIsProfileNameTouched] = useState(false);
+  const [isProfileEmailTouched, setIsProfileEmailTouched] = useState(false);
+  const [authProfile, setAuthProfile] = useState<AuthProfile | null>(null);
+
+  const backendApiBase = (process.env.NEXT_PUBLIC_BACKEND_API_URL || "http://localhost:5000").replace(/\/$/, "");
 
   const expandableItems: Record<string, string[]> = {
     Women: ["Clothing", "Accessories", "Footwear", "Lingerie and Sleepwear"],
@@ -85,6 +115,60 @@ export function SidebarNav({ items }: SidebarNavProps) {
   const showPhoneError = isPhoneTouched && !isPhoneValid;
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const showEmailError = isEmailTouched && !isEmailValid;
+  const isOtpValid = /^\d{4,8}$/.test(otpCode.trim());
+  const showOtpError = isOtpTouched && !isOtpValid;
+  const isProfileNameValid = profileName.trim().length >= 2;
+  const showProfileNameError = isProfileNameTouched && !isProfileNameValid;
+  const isProfileEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileEmail.trim().toLowerCase());
+  const showProfileEmailError = isProfileEmailTouched && !isProfileEmailValid;
+
+  const deriveNameFromContact = (contact: string) => {
+    if (!contact) {
+      return "TRT User";
+    }
+
+    if (contact.includes("@")) {
+      const localPart = contact.split("@")[0] || "TRT User";
+      const cleaned = localPart
+        .replace(/[._-]+/g, " ")
+        .replace(/\d+/g, " ")
+        .replace(/[^a-zA-Z\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/\b\w/g, (character) => character.toUpperCase());
+
+      return cleaned || "TRT User";
+    }
+
+    return "TRT User";
+  };
+
+  useEffect(() => {
+    const persistedProfile = window.localStorage.getItem("trt-auth-profile");
+
+    if (!persistedProfile) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(persistedProfile) as AuthProfile;
+
+      if (parsed?.name && parsed?.email && parsed?.channel && parsed?.contact) {
+        setAuthProfile(parsed);
+      }
+    } catch {
+      window.localStorage.removeItem("trt-auth-profile");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!authProfile) {
+      window.localStorage.removeItem("trt-auth-profile");
+      return;
+    }
+
+    window.localStorage.setItem("trt-auth-profile", JSON.stringify(authProfile));
+  }, [authProfile]);
 
   useEffect(() => {
     if (!isAuthModalOpen) {
@@ -116,6 +200,16 @@ export function SidebarNav({ items }: SidebarNavProps) {
       setPhone("");
       setEmail("");
       setIsSubscribed(true);
+      setIsRequestingOtp(false);
+      setIsVerifyingOtp(false);
+      setAuthFeedback(null);
+      setOtpSession(null);
+      setOtpCode("");
+      setIsOtpTouched(false);
+      setProfileName("");
+      setProfileEmail("");
+      setIsProfileNameTouched(false);
+      setIsProfileEmailTouched(false);
     }
   }, [isAuthModalOpen]);
 
@@ -248,6 +342,138 @@ export function SidebarNav({ items }: SidebarNavProps) {
           sectionRows: womenClothingMenuSectionRows,
         };
 
+  const handleOtpRequest = async () => {
+    if (authMode === "phone") {
+      setIsPhoneTouched(true);
+      if (!isPhoneValid) {
+        return;
+      }
+    } else {
+      setIsEmailTouched(true);
+      if (!isEmailValid) {
+        return;
+      }
+    }
+
+    setIsRequestingOtp(true);
+    setAuthFeedback(null);
+
+    const channel = authMode;
+    const contact = channel === "email" ? email.trim().toLowerCase() : phoneDigits;
+
+    try {
+      const response = await fetch(`${backendApiBase}/api/buyers/otp/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          channel,
+          contact,
+          subscribeNewsletter: isSubscribed,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as {
+        success?: boolean;
+        message?: string;
+        data?: {
+          channel?: "phone" | "email";
+          contact?: string;
+          devOtp?: string;
+        };
+      } | null;
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to send OTP right now. Please try again.");
+      }
+
+      const payloadContact = payload?.data?.contact || contact;
+      const payloadChannel = payload?.data?.channel || channel;
+
+      setOtpSession({
+        channel: payloadChannel,
+        contact: payloadContact,
+      });
+      setOtpCode(payload?.data?.devOtp || "");
+      setIsOtpTouched(false);
+      setProfileName((previous) => previous || deriveNameFromContact(payloadContact));
+      setProfileEmail((previous) => {
+        if (previous) {
+          return previous;
+        }
+
+        return payloadChannel === "email" ? payloadContact : "";
+      });
+
+      setAuthFeedback({
+        type: "success",
+        message: payload.message || "OTP sent successfully.",
+      });
+    } catch (error) {
+      setAuthFeedback({
+        type: "error",
+        message: error instanceof Error ? error.message : "Unable to send OTP right now. Please try again.",
+      });
+    } finally {
+      setIsRequestingOtp(false);
+    }
+  };
+
+  const handleOtpVerify = async () => {
+    if (!otpSession) {
+      return;
+    }
+
+    setIsOtpTouched(true);
+    setIsProfileNameTouched(true);
+    setIsProfileEmailTouched(true);
+
+    if (!isOtpValid || !isProfileNameValid || !isProfileEmailValid) {
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setAuthFeedback(null);
+
+    try {
+      const response = await fetch(`${backendApiBase}/api/buyers/otp/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          channel: otpSession.channel,
+          contact: otpSession.contact,
+          otp: otpCode.trim(),
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as { success?: boolean; message?: string } | null;
+
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.message || "Unable to verify OTP right now. Please try again.");
+      }
+
+      const nextProfile: AuthProfile = {
+        name: profileName.trim(),
+        email: profileEmail.trim().toLowerCase(),
+        channel: otpSession.channel,
+        contact: otpSession.contact,
+      };
+
+      setAuthProfile(nextProfile);
+      setIsAuthModalOpen(false);
+    } catch (error) {
+      setAuthFeedback({
+        type: "error",
+        message: error instanceof Error ? error.message : "Unable to verify OTP right now. Please try again.",
+      });
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   return (
     <>
       <nav className="px-4 py-4 pr-3">
@@ -256,6 +482,28 @@ export function SidebarNav({ items }: SidebarNavProps) {
             const subItems = expandableItems[item.label];
             const isExpandable = Boolean(subItems);
             const isOpen = openSection === item.label;
+
+            if (item.label === "Sign In / Register" && authProfile) {
+              return (
+                <li key={item.label}>
+                  <div className="rounded-lg border border-black/10 bg-white px-3 py-3">
+                    <p className="text-[0.84rem] font-semibold uppercase tracking-[0.08em] text-[#596170]">Signed In</p>
+                    <p className="mt-1 text-[1rem] font-semibold text-[#212227]">{authProfile.name}</p>
+                    <p className="mt-0.5 break-all text-[0.9rem] text-[#5f6673]">{authProfile.email}</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthProfile(null);
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="mt-3 w-full rounded-md border border-[#d7d7d7] bg-white px-3 py-2 text-[0.92rem] font-semibold text-[#4f5662] transition hover:bg-[#f8f8f8]"
+                    >
+                      Sign Out And Use Another Account
+                    </button>
+                  </div>
+                </li>
+              );
+            }
 
             return (
               <li key={item.label}>
@@ -490,17 +738,17 @@ export function SidebarNav({ items }: SidebarNavProps) {
 
               <form
                 className="mt-5"
-              onSubmit={(event) => {
-                event.preventDefault();
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  if (otpSession) {
+                    await handleOtpVerify();
+                    return;
+                  }
 
-                if (authMode === "phone") {
-                  setIsPhoneTouched(true);
-                } else {
-                  setIsEmailTouched(true);
-                }
-              }}
+                  await handleOtpRequest();
+                }}
               >
-                {authMode === "phone" ? (
+                {!otpSession && authMode === "phone" ? (
                   <>
                     <label htmlFor="phone" className="mb-2 block text-[1rem] font-medium text-[#565656]">
                       Phone Number
@@ -521,7 +769,9 @@ export function SidebarNav({ items }: SidebarNavProps) {
 
                     {showPhoneError ? <p className="mt-2 text-[0.98rem] font-medium text-[#ef5446]">Please enter a valid Phone number.</p> : null}
                   </>
-                ) : (
+                ) : null}
+
+                {!otpSession && authMode === "email" ? (
                   <>
                     <label htmlFor="email" className="mb-2 block text-[1rem] font-medium text-[#565656]">
                       Email Address
@@ -541,46 +791,147 @@ export function SidebarNav({ items }: SidebarNavProps) {
 
                     {showEmailError ? <p className="mt-2 text-[0.98rem] font-medium text-[#ef5446]">Please enter a valid email address.</p> : null}
                   </>
-                )}
+                ) : null}
 
-                <label className="mt-4 flex items-center gap-3 text-[1rem] text-[#4d4d4d]">
-                  <input
-                    type="checkbox"
-                    checked={isSubscribed}
-                    onChange={(event) => setIsSubscribed(event.target.checked)}
-                    className="h-5 w-5 rounded border-black/20 accent-[#4b4b4b]"
-                  />
-                  Subscribe to our newsletter
-                </label>
+                {otpSession ? (
+                  <>
+                    <p className="mb-2 text-[0.95rem] text-[#555]">
+                      Enter OTP sent to {otpSession.channel === "email" ? otpSession.contact : `+92${otpSession.contact}`}.
+                    </p>
 
-                <button type="submit" className="mt-5 w-full rounded-[10px] bg-[#26272b] px-5 py-[11px] text-[1.08rem] font-semibold text-white transition hover:bg-[#1f2023]">
-                  Request OTP
-                </button>
+                    <label htmlFor="otp-code" className="mb-2 block text-[1rem] font-medium text-[#565656]">
+                      OTP Code
+                    </label>
+
+                    <div className={`overflow-hidden rounded-[10px] border ${showOtpError ? "border-[#f2a2a2]" : "border-[#d8d8d8]"}`}>
+                      <input
+                        id="otp-code"
+                        inputMode="numeric"
+                        value={otpCode}
+                        onChange={(event) => setOtpCode(event.target.value)}
+                        onBlur={() => setIsOtpTouched(true)}
+                        placeholder="Enter OTP"
+                        className="w-full px-4 py-3 text-[1rem] text-[#2c2c2c] outline-none placeholder:text-[#9a9a9a]"
+                      />
+                    </div>
+
+                    {showOtpError ? <p className="mt-2 text-[0.98rem] font-medium text-[#ef5446]">Please enter a valid OTP.</p> : null}
+
+                    <label htmlFor="profile-name" className="mb-2 mt-4 block text-[1rem] font-medium text-[#565656]">
+                      Full Name
+                    </label>
+
+                    <div className={`overflow-hidden rounded-[10px] border ${showProfileNameError ? "border-[#f2a2a2]" : "border-[#d8d8d8]"}`}>
+                      <input
+                        id="profile-name"
+                        value={profileName}
+                        onChange={(event) => setProfileName(event.target.value)}
+                        onBlur={() => setIsProfileNameTouched(true)}
+                        placeholder="Enter your full name"
+                        className="w-full px-4 py-3 text-[1rem] text-[#2c2c2c] outline-none placeholder:text-[#9a9a9a]"
+                      />
+                    </div>
+
+                    {showProfileNameError ? <p className="mt-2 text-[0.98rem] font-medium text-[#ef5446]">Please enter your name.</p> : null}
+
+                    <label htmlFor="profile-email" className="mb-2 mt-4 block text-[1rem] font-medium text-[#565656]">
+                      Email Address
+                    </label>
+
+                    <div className={`overflow-hidden rounded-[10px] border ${showProfileEmailError ? "border-[#f2a2a2]" : "border-[#d8d8d8]"}`}>
+                      <input
+                        id="profile-email"
+                        type="email"
+                        value={profileEmail}
+                        onChange={(event) => setProfileEmail(event.target.value)}
+                        onBlur={() => setIsProfileEmailTouched(true)}
+                        placeholder="Enter your email address"
+                        className="w-full px-4 py-3 text-[1rem] text-[#2c2c2c] outline-none placeholder:text-[#9a9a9a]"
+                      />
+                    </div>
+
+                    {showProfileEmailError ? <p className="mt-2 text-[0.98rem] font-medium text-[#ef5446]">Please enter a valid email address.</p> : null}
+                  </>
+                ) : null}
+
+                {!otpSession ? (
+                  <label className="mt-4 flex items-center gap-3 text-[1rem] text-[#4d4d4d]">
+                    <input
+                      type="checkbox"
+                      checked={isSubscribed}
+                      onChange={(event) => setIsSubscribed(event.target.checked)}
+                      className="h-5 w-5 rounded border-black/20 accent-[#4b4b4b]"
+                    />
+                    Subscribe to our newsletter
+                  </label>
+                ) : null}
 
                 <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode((previous) => (previous === "phone" ? "email" : "phone"));
-                    setIsPhoneTouched(false);
-                    setIsEmailTouched(false);
-                  }}
-                  className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-[10px] border border-[#d7d7d7] bg-white px-5 py-[11px] text-[1.08rem] font-semibold text-[#5a5a5a] transition hover:bg-[#fafafa]"
+                  type="submit"
+                  disabled={isRequestingOtp || isVerifyingOtp}
+                  className="mt-5 w-full rounded-[10px] bg-[#26272b] px-5 py-[11px] text-[1.08rem] font-semibold text-white transition hover:bg-[#1f2023] disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
-                    {authMode === "phone" ? (
-                      <>
-                        <path d="M3 6.5h18v11H3z" fill="none" stroke="currentColor" strokeWidth="1.8" />
-                        <path d="m4.5 8 7.5 6 7.5-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </>
-                    ) : (
-                      <>
-                        <path d="M8 3.5h8v17H8z" fill="none" stroke="currentColor" strokeWidth="1.8" />
-                        <path d="M10 18h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                      </>
-                    )}
-                  </svg>
-                  {authMode === "phone" ? "Continue With Email" : "Continue With Phone"}
+                  {otpSession
+                    ? isVerifyingOtp
+                      ? "Verifying OTP..."
+                      : "Verify OTP"
+                    : isRequestingOtp
+                      ? "Sending OTP..."
+                      : "Request OTP"}
                 </button>
+
+                {authFeedback ? (
+                  <p
+                    className={`mt-3 text-[0.95rem] font-medium ${
+                      authFeedback.type === "success" ? "text-[#1d7d42]" : "text-[#d43b3b]"
+                    }`}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {authFeedback.message}
+                  </p>
+                ) : null}
+
+                {!otpSession ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMode((previous) => (previous === "phone" ? "email" : "phone"));
+                      setIsPhoneTouched(false);
+                      setIsEmailTouched(false);
+                      setAuthFeedback(null);
+                    }}
+                    className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-[10px] border border-[#d7d7d7] bg-white px-5 py-[11px] text-[1.08rem] font-semibold text-[#5a5a5a] transition hover:bg-[#fafafa]"
+                  >
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
+                      {authMode === "phone" ? (
+                        <>
+                          <path d="M3 6.5h18v11H3z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                          <path d="m4.5 8 7.5 6 7.5-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </>
+                      ) : (
+                        <>
+                          <path d="M8 3.5h8v17H8z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+                          <path d="M10 18h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                        </>
+                      )}
+                    </svg>
+                    {authMode === "phone" ? "Continue With Email" : "Continue With Phone"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpSession(null);
+                      setOtpCode("");
+                      setIsOtpTouched(false);
+                      setAuthFeedback(null);
+                    }}
+                    className="mt-3.5 w-full rounded-[10px] border border-[#d7d7d7] bg-white px-5 py-[11px] text-[1.08rem] font-semibold text-[#5a5a5a] transition hover:bg-[#fafafa]"
+                  >
+                    Change Phone/Email
+                  </button>
+                )}
               </form>
             </div>
 
